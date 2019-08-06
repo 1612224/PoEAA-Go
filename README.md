@@ -16,3 +16,4 @@ Simple implementations of some patterns in PoEAA book using Go
 - [ ] Identity Map
 - [ ] Lazy Load
 ## Object-Relational Structural Patterns
+- [x] Identity Field
