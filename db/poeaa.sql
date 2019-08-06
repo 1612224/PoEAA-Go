@@ -5,7 +5,7 @@
 -- Dumped from database version 11.3
 -- Dumped by pg_dump version 11.4 (Ubuntu 11.4-0ubuntu0.19.04.1)
 
--- Started on 2019-08-05 11:13:00 +07
+-- Started on 2019-08-06 10:17:48 +07
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -42,8 +42,6 @@ CREATE TABLE public.people (
 --
 
 COPY public.people (id, lastname, firstname, number_of_dependents) FROM stdin;
-1	Bob	John	1
-2	Jack	Ace	2
 \.
 
 
@@ -56,7 +54,7 @@ ALTER TABLE ONLY public.people
     ADD CONSTRAINT people_pkey PRIMARY KEY (id);
 
 
--- Completed on 2019-08-05 11:13:01 +07
+-- Completed on 2019-08-06 10:17:50 +07
 
 --
 -- PostgreSQL database dump complete
