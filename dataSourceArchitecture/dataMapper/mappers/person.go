@@ -3,22 +3,23 @@ package mappers
 import (
 	"database/sql"
 
+	keygenerators "github.com/1612224/PoEAA-Go/objectRelationalStructure/identityField/keyGenerators"
+
 	"github.com/1612224/PoEAA-Go/dataSourceArchitecture/dataMapper/domain"
 )
 
-var currentID = 0
-
-func getNextID() int {
-	currentID++
-	return currentID
+type idGenerator interface {
+	NextID() (int, error)
+	Reset() error
 }
 
 type PersonMapper struct {
-	db *sql.DB
+	db        *sql.DB
+	generator idGenerator
 }
 
-func NewPersonMapper(db *sql.DB) *PersonMapper {
-	return &PersonMapper{db}
+func NewPersonMapper(db *sql.DB, generator idGenerator) *PersonMapper {
+	return &PersonMapper{db, generator}
 }
 
 type scanner interface {
@@ -44,7 +45,7 @@ func rowToPerson(row scanner) (*domain.Person, error) {
 func (pm *PersonMapper) FindAll() ([]*domain.Person, error) {
 	db := pm.db
 	rows, err := db.Query(`
-		select id, lastname, firstname, number_of_dependents
+		select id, lastname, firstname, numberofdependents
 		from people
 	`)
 	if err != nil {
@@ -65,7 +66,7 @@ func (pm *PersonMapper) FindAll() ([]*domain.Person, error) {
 func (pm *PersonMapper) FindOne(id int) (*domain.Person, error) {
 	db := pm.db
 	row := db.QueryRow(`
-		select id, lastname, firstname, number_of_dependents
+		select id, lastname, firstname, numberofdependents
 		from people
 		where id = $1
 	`, id)
@@ -79,8 +80,15 @@ func (pm *PersonMapper) FindOne(id int) (*domain.Person, error) {
 
 func (pm *PersonMapper) Insert(person *domain.Person) error {
 	db := pm.db
+	if person.ID == keygenerators.KeyPlaceholder {
+		id, err := pm.generator.NextID()
+		if err != nil {
+			return err
+		}
+		person.ID = id
+	}
 	_, err := db.Exec(`
-		insert into people (id, lastname, firstname, number_of_dependents)
+		insert into people (id, lastname, firstname, numberofdependents)
 		values
 			($1, $2, $3, $4)
 	`, person.ID, person.LastName, person.FirstName, person.NumberOfDependents)
@@ -91,7 +99,7 @@ func (pm *PersonMapper) Update(person *domain.Person) error {
 	db := pm.db
 	_, err := db.Exec(`
 		update people 
-		set lastname = $1, firstname = $2, number_of_dependents = $3
+		set lastname = $1, firstname = $2, numberofdependents = $3
 		where id = $4
 	`, person.LastName, person.FirstName, person.NumberOfDependents, person.ID)
 	return err
@@ -109,6 +117,10 @@ func (pm *PersonMapper) Delete(person *domain.Person) error {
 func (pm *PersonMapper) DeleteAll() error {
 	db := pm.db
 	_, err := db.Exec(`delete from people`)
+	if err != nil {
+		return err
+	}
+	err = pm.generator.Reset()
 	return err
 }
 
@@ -118,6 +130,6 @@ func (pm *PersonMapper) NewPerson(lastname, firstname string, numberOfDependents
 		FirstName:          firstname,
 		NumberOfDependents: numberOfDependents,
 	}
-	person.ID = getNextID()
+	person.ID = keygenerators.KeyPlaceholder
 	return person
 }

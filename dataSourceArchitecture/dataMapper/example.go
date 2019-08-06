@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	keygenerators "github.com/1612224/PoEAA-Go/objectRelationalStructure/identityField/keyGenerators"
+
 	"github.com/1612224/PoEAA-Go/dataSourceArchitecture/dataMapper/mappers"
 	_ "github.com/lib/pq"
 )
@@ -29,7 +31,8 @@ func main() {
 	fmt.Println("Open DB Successfully")
 
 	// init db
-	personMapper := mappers.NewPersonMapper(db)
+	keyGenerator := keygenerators.NewKeyGenerator(db, "people", 1)
+	personMapper := mappers.NewPersonMapper(db, keyGenerator)
 	personOne := personMapper.NewPerson("Bob", "John", 1)
 	personTwo := personMapper.NewPerson("Jake", "Tim", 3)
 	personMapper.Insert(personOne)

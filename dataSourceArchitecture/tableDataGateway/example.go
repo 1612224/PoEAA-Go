@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	keygenerators "github.com/1612224/PoEAA-Go/objectRelationalStructure/identityField/keyGenerators"
+
 	"github.com/1612224/PoEAA-Go/dataSourceArchitecture/tableDataGateway/gateways"
 	_ "github.com/lib/pq"
 )
@@ -34,7 +36,8 @@ func main() {
 	}
 
 	fmt.Println("Open DB Successfully")
-	peopleGateway := gateways.NewPeopleGateway(db)
+	keyGenerator := keygenerators.NewKeyGenerator(db, "people", 1)
+	peopleGateway := gateways.NewPeopleGateway(db, keyGenerator)
 
 	// init db
 	peopleGateway.Insert("Bob", "John", 1)
@@ -70,7 +73,7 @@ func main() {
 
 	// update and print
 	fmt.Println("--------------Update-------------------------")
-	err = peopleGateway.Update(1, "Tim", "Jake", 4)
+	err = peopleGateway.Update(2, "Tim", "Jake", 4)
 	if err != nil {
 		log.Fatal(err)
 	}

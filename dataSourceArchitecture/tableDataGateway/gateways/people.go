@@ -1,22 +1,23 @@
 package gateways
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
-var currentID = 0
-
-func getNextID() int {
-	currentID++
-	return currentID
+type idGenerator interface {
+	NextID() (int, error)
+	Reset() error
 }
 
 // PeopleGateway acts as Gateway for People table
 type PeopleGateway struct {
-	db *sql.DB
+	db        *sql.DB
+	generator idGenerator
 }
 
 // NewPeopleGateway creates new PersonGateway
-func NewPeopleGateway(db *sql.DB) *PeopleGateway {
-	ps := &PeopleGateway{db}
+func NewPeopleGateway(db *sql.DB, generator idGenerator) *PeopleGateway {
+	ps := &PeopleGateway{db, generator}
 	return ps
 }
 
@@ -61,8 +62,8 @@ func (gateway *PeopleGateway) FindRow(id int) *sql.Row {
 func (gateway *PeopleGateway) Update(id int, lastName, firstName string, numberOfDependents int) error {
 	db := gateway.db
 	_, err := db.Exec(`
-	update people 
-		set lastname = $1, firstname = $2, number_of_dependents = $3 
+		update people 
+		set lastname = $1, firstname = $2, numberofdependents = $3 
 		where id = $4
 	`, lastName, firstName, numberOfDependents, id)
 	return err
@@ -71,10 +72,15 @@ func (gateway *PeopleGateway) Update(id int, lastName, firstName string, numberO
 // Insert inserts
 func (gateway *PeopleGateway) Insert(lastName, firstName string, numberOfDependents int) error {
 	db := gateway.db
-	id := getNextID()
-	_, err := db.Exec(`
-	insert into people(id,lastname,firstname,number_of_dependents) values
-		($1,$2,$3,$4)
+
+	id, err := gateway.generator.NextID()
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(`
+		insert into people(id, lastname, firstname, numberofdependents) 
+		values
+			($1,$2,$3,$4)
 	`, id, lastName, firstName, numberOfDependents)
 	return err
 }
@@ -83,7 +89,7 @@ func (gateway *PeopleGateway) Insert(lastName, firstName string, numberOfDepende
 func (gateway *PeopleGateway) Delete(id int) error {
 	db := gateway.db
 	_, err := db.Exec(`
-	delete from people
+		delete from people
 		where id = $1
 	`, id)
 	return err
@@ -92,8 +98,10 @@ func (gateway *PeopleGateway) Delete(id int) error {
 // DeleteAll deletes all
 func (gateway *PeopleGateway) DeleteAll() error {
 	db := gateway.db
+
 	_, err := db.Exec(`
-	delete from people
+		delete from people
 	`)
+	err = gateway.generator.Reset()
 	return err
 }
